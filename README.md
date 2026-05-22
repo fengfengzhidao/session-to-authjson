@@ -6,9 +6,15 @@ Open [index.html](./index.html) in a browser, paste the source JSON, and convert
 
 ## GitHub Pages
 
-This repository includes a GitHub Actions workflow for GitHub Pages.
+This repository publishes the static page from the `gh-pages` branch.
 
-After the workflow finishes, the site will be available at:
+In repository **Settings -> Pages**, choose:
+
+- Source: `Deploy from a branch`
+- Branch: `gh-pages`
+- Folder: `/ (root)`
+
+After GitHub finishes deployment, the site will be available at:
 
 ```text
 https://<your-user-name>.github.io/<repository-name>/
