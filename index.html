@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>session-to-authjson</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f7f9;
+        --panel: #ffffff;
+        --panel-soft: #edf1f5;
+        --ink: #202123;
+        --muted: #667085;
+        --line: #d0d5dd;
+        --accent: #0f766e;
+        --accent-strong: #115e59;
+        --accent-ink: #0a4d45;
+        --blue: #2563eb;
+        --violet: #6d5dfc;
+        --danger: #b42318;
+        --danger-bg: #fff1f0;
+        --ok: #176b3a;
+        --ok-bg: #eefbf2;
+        --shadow: 0 18px 55px rgba(32, 33, 35, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          linear-gradient(180deg, rgba(246, 247, 249, 0.88), rgba(246, 247, 249, 0.98)),
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cg fill='none' stroke='%23d0d5dd' stroke-width='1' opacity='.42'%3E%3Cpath d='M0 40h160M0 80h160M0 120h160M40 0v160M80 0v160M120 0v160'/%3E%3C/g%3E%3C/svg%3E");
+        color: var(--ink);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      button,
+      textarea,
+      input {
+        font: inherit;
+      }
+
+      button {
+        min-height: 2.45rem;
+        border: 1px solid transparent;
+        border-radius: 7px;
+        padding: 0.58rem 0.86rem;
+        color: var(--ink);
+        background: var(--panel-soft);
+        cursor: pointer;
+        transition: transform 140ms ease, background 140ms ease, border-color 140ms ease, color 140ms ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+        border-color: #98a2b3;
+      }
+
+      button:active {
+        transform: translateY(0);
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.52;
+        transform: none;
+      }
+
+      .shell {
+        width: min(1440px, 100%);
+        min-height: 100vh;
+        margin: 0 auto;
+        padding: 24px;
+        display: grid;
+        grid-template-rows: auto auto 1fr auto;
+        gap: 16px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        min-height: 52px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+      }
+
+      .mark {
+        width: 38px;
+        height: 38px;
+        display: grid;
+        place-items: center;
+        border-radius: 8px;
+        color: #ffffff;
+        background: linear-gradient(135deg, var(--accent), var(--blue));
+        box-shadow: 0 10px 28px rgba(15, 118, 110, 0.18);
+        flex: 0 0 auto;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(1.1rem, 1rem + 0.55vw, 1.55rem);
+        line-height: 1.12;
+        letter-spacing: 0;
+      }
+
+      .subtle {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 0.88rem;
+        line-height: 1.4;
+      }
+
+      .toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .primary {
+        background: var(--accent);
+        color: #ffffff;
+      }
+
+      .primary:hover {
+        background: var(--accent-strong);
+        border-color: var(--accent-strong);
+      }
+
+      .ghost {
+        background: rgba(255, 255, 255, 0.7);
+        border-color: var(--line);
+      }
+
+      .switch-wrap {
+        min-height: 2.45rem;
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        padding: 0 0.72rem;
+        background: rgba(255, 255, 255, 0.74);
+      }
+
+      .icon-button {
+        width: 2.45rem;
+        padding: 0;
+        display: inline-grid;
+        place-items: center;
+      }
+
+      .icon {
+        width: 18px;
+        height: 18px;
+        display: block;
+      }
+
+      .status {
+        min-height: 42px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 10px 12px;
+        background: rgba(255, 255, 255, 0.72);
+        color: var(--muted);
+      }
+
+      .status[data-tone="ok"] {
+        color: var(--ok);
+        background: var(--ok-bg);
+        border-color: #bce8ca;
+      }
+
+      .status[data-tone="error"] {
+        color: var(--danger);
+        background: var(--danger-bg);
+        border-color: #ffd0cc;
+      }
+
+      .workbench {
+        min-height: 0;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 16px;
+      }
+
+      .pane {
+        min-height: 520px;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+      }
+
+      .pane-head {
+        min-height: 54px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px;
+        border-bottom: 1px solid var(--line);
+        background: #f8fafc;
+      }
+
+      .pane-title {
+        margin: 0;
+        font-size: 0.95rem;
+        line-height: 1.2;
+      }
+
+      .pane-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 100%;
+        resize: none;
+        border: 0;
+        outline: 0;
+        padding: 16px;
+        color: #161719;
+        background: #ffffff;
+        font-family: "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-size: 0.9rem;
+        line-height: 1.55;
+        tab-size: 2;
+      }
+
+      textarea::placeholder {
+        color: #8a8d91;
+      }
+
+      .pane-foot {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 9px 12px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        background: #f8fafc;
+        font-size: 0.82rem;
+      }
+
+      .switch {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        user-select: none;
+      }
+
+      .switch input {
+        width: 1rem;
+        height: 1rem;
+        accent-color: var(--accent);
+      }
+
+      .file-input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+        clip-path: inset(50%);
+      }
+
+      .footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+
+      @media (max-width: 900px) {
+        .shell {
+          padding: 16px;
+        }
+
+        .topbar,
+        .footer {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .toolbar {
+          justify-content: flex-start;
+          width: 100%;
+        }
+
+        .workbench {
+          grid-template-columns: 1fr;
+        }
+
+        .pane {
+          min-height: 420px;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .shell {
+          padding: 12px;
+        }
+
+        .pane-head,
+        .pane-foot {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .pane-actions {
+          width: 100%;
+        }
+
+        button:not(.icon-button) {
+          flex: 1 1 9rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="mark" aria-hidden="true">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
+              <path d="M16 3h3a2 2 0 0 1 2 2v3"></path>
+              <path d="M8 21H5a2 2 0 0 1-2-2v-3"></path>
+              <path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>
+              <path d="m8 12 2 2 4-5"></path>
+            </svg>
+          </div>
+          <div>
+            <h1>session-to-authjson</h1>
+            <p class="subtle">Session JSON -> Auth JSON</p>
+          </div>
+        </div>
+
+        <div class="toolbar" aria-label="全局操作">
+          <button class="primary" id="convertButton" type="button">
+            转换
+          </button>
+          <span class="switch-wrap">
+            <label class="switch" title="输出压缩 JSON">
+              <input id="compactToggle" type="checkbox">
+              压缩
+            </label>
+          </span>
+        </div>
+      </header>
+
+      <section class="status" id="status" aria-live="polite">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M12 16v-4"></path>
+          <path d="M12 8h.01"></path>
+        </svg>
+        <span id="statusText">等待输入。</span>
+      </section>
+
+      <section class="workbench" aria-label="转换区域">
+        <article class="pane">
+          <div class="pane-head">
+            <h2 class="pane-title">源 JSON</h2>
+            <div class="pane-actions">
+              <input class="file-input" id="fileInput" type="file" accept="application/json,.json">
+              <button class="ghost icon-button" id="openFileButton" type="button" title="打开 JSON 文件" aria-label="打开 JSON 文件">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path>
+                  <path d="M14 2v4a2 2 0 0 0 2 2h4"></path>
+                  <path d="M12 18v-6"></path>
+                  <path d="m9 15 3 3 3-3"></path>
+                </svg>
+              </button>
+              <button class="ghost icon-button" id="pasteButton" type="button" title="从剪贴板粘贴" aria-label="从剪贴板粘贴">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect width="8" height="4" x="8" y="2" rx="1"></rect>
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                </svg>
+              </button>
+              <button class="ghost icon-button" id="clearButton" type="button" title="清空" aria-label="清空">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 6h18"></path>
+                  <path d="M8 6V4h8v2"></path>
+                  <path d="m19 6-1 14H6L5 6"></path>
+                  <path d="M10 11v6"></path>
+                  <path d="M14 11v6"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <textarea id="sourceInput" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder='{"accessToken":"...","account":{"id":"..."}}'></textarea>
+          <div class="pane-foot">
+            <span id="sourceStats">0 字符</span>
+            <span>input</span>
+          </div>
+        </article>
+
+        <article class="pane">
+          <div class="pane-head">
+            <h2 class="pane-title">目标 JSON</h2>
+            <div class="pane-actions">
+              <button class="ghost icon-button" id="copyButton" type="button" title="复制结果" aria-label="复制结果" disabled>
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect width="14" height="14" x="8" y="8" rx="2"></rect>
+                  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+                </svg>
+              </button>
+              <button class="ghost icon-button" id="downloadButton" type="button" title="下载 auth.json" aria-label="下载 auth.json" disabled>
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <path d="M7 10l5 5 5-5"></path>
+                  <path d="M12 15V3"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <textarea id="targetOutput" spellcheck="false" readonly placeholder="转换结果会显示在这里"></textarea>
+          <div class="pane-foot">
+            <span id="targetStats">0 字符</span>
+            <span id="refreshStamp">-</span>
+          </div>
+        </article>
+      </section>
+
+      <footer class="footer">
+        <span>session-to-authjson</span>
+        <span>GitHub Pages</span>
+      </footer>
+    </main>
+
+    <script>
+      const sourceInput = document.querySelector("#sourceInput");
+      const targetOutput = document.querySelector("#targetOutput");
+      const convertButton = document.querySelector("#convertButton");
+      const compactToggle = document.querySelector("#compactToggle");
+      const statusBox = document.querySelector("#status");
+      const statusText = document.querySelector("#statusText");
+      const sourceStats = document.querySelector("#sourceStats");
+      const targetStats = document.querySelector("#targetStats");
+      const refreshStamp = document.querySelector("#refreshStamp");
+      const copyButton = document.querySelector("#copyButton");
+      const downloadButton = document.querySelector("#downloadButton");
+      const clearButton = document.querySelector("#clearButton");
+      const pasteButton = document.querySelector("#pasteButton");
+      const openFileButton = document.querySelector("#openFileButton");
+      const fileInput = document.querySelector("#fileInput");
+
+      function utcNowWithMicroseconds() {
+        const date = new Date();
+        const iso = date.toISOString();
+        return iso.replace("Z", "000Z");
+      }
+
+      function convertSessionToAuth(source, compact) {
+        let parsed;
+        try {
+          parsed = JSON.parse(source);
+        } catch (error) {
+          throw new Error("源 JSON 解析失败：" + error.message);
+        }
+
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+          throw new Error("源 JSON 必须是对象。");
+        }
+        if (typeof parsed.accessToken !== "string" || parsed.accessToken.length === 0) {
+          throw new Error("缺少字段：accessToken");
+        }
+        if (!parsed.account || typeof parsed.account.id !== "string" || parsed.account.id.length === 0) {
+          throw new Error("缺少字段：account.id");
+        }
+
+        const lastRefresh = utcNowWithMicroseconds();
+        const output = {
+          last_refresh: lastRefresh,
+          tokens: {
+            access_token: parsed.accessToken,
+            account_id: parsed.account.id,
+            id_token: parsed.accessToken,
+            refresh_token: parsed.accessToken
+          }
+        };
+
+        return {
+          json: JSON.stringify(output, null, compact ? 0 : 2) + "\n",
+          lastRefresh
+        };
+      }
+
+      function setStatus(message, tone) {
+        statusText.textContent = message;
+        if (tone) {
+          statusBox.dataset.tone = tone;
+        } else {
+          delete statusBox.dataset.tone;
+        }
+      }
+
+      function updateStats() {
+        sourceStats.textContent = sourceInput.value.length + " 字符";
+        targetStats.textContent = targetOutput.value.length + " 字符";
+        const hasOutput = targetOutput.value.length > 0;
+        copyButton.disabled = !hasOutput;
+        downloadButton.disabled = !hasOutput;
+      }
+
+      function convert() {
+        const source = sourceInput.value.trim();
+        if (!source) {
+          targetOutput.value = "";
+          refreshStamp.textContent = "-";
+          updateStats();
+          setStatus("等待输入。");
+          return;
+        }
+
+        try {
+          const result = convertSessionToAuth(source, compactToggle.checked);
+          targetOutput.value = result.json;
+          refreshStamp.textContent = result.lastRefresh;
+          updateStats();
+          setStatus("转换完成。", "ok");
+        } catch (error) {
+          targetOutput.value = "";
+          refreshStamp.textContent = "-";
+          updateStats();
+          setStatus(error.message, "error");
+        }
+      }
+
+      async function copyOutput() {
+        if (!targetOutput.value) return;
+        try {
+          await navigator.clipboard.writeText(targetOutput.value);
+          setStatus("已复制。", "ok");
+        } catch {
+          targetOutput.focus();
+          targetOutput.select();
+          document.execCommand("copy");
+          setStatus("已复制。", "ok");
+        }
+      }
+
+      function downloadOutput() {
+        if (!targetOutput.value) return;
+        const blob = new Blob([targetOutput.value], { type: "application/json;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "auth.json";
+        document.body.append(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        setStatus("已生成 auth.json。", "ok");
+      }
+
+      async function pasteFromClipboard() {
+        try {
+          sourceInput.value = await navigator.clipboard.readText();
+          updateStats();
+          convert();
+        } catch {
+          setStatus("浏览器未允许读取剪贴板。", "error");
+        }
+      }
+
+      function clearAll() {
+        sourceInput.value = "";
+        targetOutput.value = "";
+        refreshStamp.textContent = "-";
+        updateStats();
+        setStatus("已清空。");
+        sourceInput.focus();
+      }
+
+      async function loadFile(file) {
+        if (!file) return;
+        sourceInput.value = await file.text();
+        updateStats();
+        convert();
+      }
+
+      convertButton.addEventListener("click", convert);
+      compactToggle.addEventListener("change", convert);
+      copyButton.addEventListener("click", copyOutput);
+      downloadButton.addEventListener("click", downloadOutput);
+      clearButton.addEventListener("click", clearAll);
+      pasteButton.addEventListener("click", pasteFromClipboard);
+      openFileButton.addEventListener("click", () => fileInput.click());
+      fileInput.addEventListener("change", () => loadFile(fileInput.files[0]));
+      sourceInput.addEventListener("input", updateStats);
+      sourceInput.addEventListener("keydown", (event) => {
+        if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+          event.preventDefault();
+          convert();
+        }
+      });
+
+      updateStats();
+    </script>
+  </body>
+</html>
