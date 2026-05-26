@@ -192,6 +192,26 @@
         border-color: #ffd0cc;
       }
 
+      .notice {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border: 2px solid var(--danger);
+        border-radius: 8px;
+        padding: 14px 16px;
+        background: #fff1f0;
+        color: var(--danger);
+        font-size: 1rem;
+        font-weight: 700;
+        box-shadow: 0 14px 36px rgba(180, 35, 24, 0.16);
+      }
+
+      .notice .icon {
+        width: 22px;
+        height: 22px;
+        flex: 0 0 auto;
+      }
+
       .workbench {
         min-height: 0;
         display: grid;
@@ -375,6 +395,15 @@
           </span>
         </div>
       </header>
+
+      <section class="notice" role="alert" aria-label="重要提示">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+          <path d="M12 9v4"></path>
+          <path d="M12 17h.01"></path>
+        </svg>
+        <span>当前方案已失效，目前方案已不可用，请注意。</span>
+      </section>
 
       <section class="status" id="status" aria-live="polite">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
